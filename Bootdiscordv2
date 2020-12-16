@@ -1,0 +1,113 @@
+import discord
+import random
+import json
+import time
+import asyncio
+from discord import role
+from discord.ext import commands
+from discord.ext.commands import*
+from discord.utils import get
+
+
+rule = "Les règles:\n1. Pas d'insultes\n2. Lire les régle dans le salon 'rules' \n3. Pas de spam"
+com = "Pour utiliser les commande marquer '!' avant votre commande suivie de :\n1 : regle\n2 : commande\n3 : bonjour @pseudo"
+com_admin = com = "Pour utiliser les commande marquer '!' avant votre commande suivie de :\n1 : commande_admin\n2 : warning @pseudo"
+jeton_bot = "Nzg4MDk2MDI1NjI1NzU1NjUx.X9ehng.RDXXtSyn2IXLTEYak-nSq0mTtps"
+jeton_bot_theo = "Nzg4Mzg4MTU5OTU1NjY0ODk2.X9ixsA.yEmjDbhw1ZI_m08XubTW32bbfE8"
+
+bot = bot = commands.Bot(command_prefix='!')
+warnings = {}
+with open('warnings.json', 'r') as infile:
+    warnings = json.load(infile)
+@bot.event
+async def on_disconnect():
+    print("Le bot est partie se reposé")
+@bot.event
+async def on_ready():
+    print("Bot est lancé")
+    await bot.change_presence(status=discord.Status.online,
+            activity=discord.Game("Le Bot s'enuie"))# CustomActivity(to_dict)
+    #print('Logged in as :')
+	#print(bot.user.name)
+	#print(bot.user.id)
+	#print('------')
+
+@bot.event
+async def on_raw_reaction_add(payload):
+    user_id = payload.user_id
+    emoji = payload.emoji.name
+    canal = payload.channel_id
+    print("le Salon est num est ", canal)
+    message = payload.message_id
+    serveur_id = payload.guild_id
+    Roles = bot.get_guild(serveur_id).roles
+    VIP_role = get(bot.get_guild(payload.guild_id).roles, name="VIP")
+    Man = await bot.get_guild(payload.guild_id).fetch_member(payload.user_id)
+    
+    if (canal == 788141179845869584 and message == 788141328331833394 and serveur_id == 784406105576046592 and emoji == "photoprofileduBoss"):
+        await Man.add_roles(VIP_role)
+        await Man.send("Tu vien d'optenir le grade VIP")
+
+@bot.event
+async def on_raw_reaction_remove(payload):
+    user_id = float(payload.user_id)
+    emoji = payload.emoji.name
+    canal = payload.channel_id
+    message = payload.message_id
+    serveur_id = float(payload.guild_id)
+    Roles = float(bot.get_guild(serveur_id).roles)
+    VIP_role = get(bot.get_guild(payload.guild_id).roles, name="VIP")
+    membre = await bot.get_guild(payload.guild_id).fetch_member(payload.user_id)
+
+    if (canal == 788141179845869584 and message == 788141328331833394 and serveur_id == 784406105576046592 and emoji == "photoprofileduBoss"):
+        await membre.remove_roles(VIP_role)
+        await membre.send("Tu vient de perdre le grade VIP")
+
+@bot.command()
+@commands.has_any_role('Owner', 'Admin')
+#@commands.has_permissions(Administeur=True)
+async def warning(ctx, membre: discord.Member):
+    pseudo = membre.mention
+    id = membre.id
+    if id not in warnings:
+        warnings[id] = 0
+    warnings[id] += 1
+    await ctx.send(f"Le membre {pseudo} a reçu une alerte ! Il s'est pris "+ str(warnings[id]) + "/5.\nAttention à bien respecter les regles ! Si tu as un doute vas dans le salon 'rules'.")
+    
+    if warnings[id] == 5:
+        warnings[id] = 0
+        await membre.send("Vous avez été éjécté du serveur ! trop d'avertissements !\nMerci de faire attention aux regles dans le salon 'rules'")
+        await ctx.send(f"Le membre {pseudo} a bien été kick ! Car il s'est pris "+ str(warnings[id]) + "/5 warning.")
+        print(f"Le joueur à été kick et a comme pseudo : {pseudo} et a comme id : ", id)
+        await membre.kick()
+    with open('warnings.json', 'w') as outfile:
+        json.dump(warnings, outfile)
+@warning.error
+async def on_command_error(ctx, error):
+    if isinstance(error, commands.MissingRequiredArgument):
+        await ctx.send("Désoler tu doit faire : '!warning @pseudo'")
+
+@bot.command()
+async def regle(ctx):
+    await ctx.send(rule)
+@bot.command()
+async def commande(ctx):
+    await ctx.send(com)
+@bot.command()
+@commands.has_any_role('Owner', 'Admin', 'Modo')
+async def commande_admin(ctx):
+    await ctx.send(com_admin)
+@bot.command()
+async def bonjour(ctx, nouveau_membre: discord.Member):
+    pseudo = nouveau_membre.mention
+    await ctx.send(f"Bienvenue à {pseudo} sur le serveur discord ! N'oublie pas de faire !regle.\nPour voir la totalité de commande taper !commande")
+    #await message.delete()
+@bonjour.error
+async def on_command_error(ctx, error):
+    if isinstance(error, commands.MissingRequiredArgument):
+        await ctx.send("Désoler tu doit faire : '!bonjour @pseudo'")
+
+
+print("Lancement du bot...")
+#bot.run(jeton_bot_theo)
+bot.run(jeton_bot)
